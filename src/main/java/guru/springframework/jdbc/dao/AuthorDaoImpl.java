@@ -3,6 +3,7 @@ package guru.springframework.jdbc.dao;
 import guru.springframework.jdbc.domain.Author;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.TypedQuery;
 import org.springframework.stereotype.Component;
 
@@ -69,11 +70,26 @@ public class AuthorDaoImpl implements AuthorDao {
     @Override
     public Author updateAuthor(Author author) {
         EntityManager em = getEntityManager();
-        em.joinTransaction();
-        em.merge(author);
-        em.flush();
-        em.clear();
-        return em.find(Author.class, author.getId());
+        EntityTransaction transaction = em.getTransaction();
+
+        try {
+            transaction.begin(); // Start the transaction required for this database operation.
+            Author merged = em.merge(author); // Copy the detached author's state into a managed entity.
+            transaction.commit(); // Commit; JPA flushes pending updates before completing the commit.
+            return merged;
+        } catch (RuntimeException exception) {
+            if (transaction.isActive()) {
+                try {
+                    transaction.rollback(); // Undo uncommitted changes if the operation failed.
+                } catch (RuntimeException rollbackException) {
+                    // Preserve the original failure while retaining any rollback failure for diagnosis.
+                    exception.addSuppressed(rollbackException);
+                }
+            }
+            throw exception;
+        } finally {
+            em.close(); // Release the persistence context and its database resources.
+        }
     }
 
     @Override
@@ -85,7 +101,6 @@ public class AuthorDaoImpl implements AuthorDao {
         return emf.createEntityManager();
     }
 }
-
 
 
 
