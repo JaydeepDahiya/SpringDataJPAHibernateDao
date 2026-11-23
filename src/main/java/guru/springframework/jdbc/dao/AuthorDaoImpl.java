@@ -95,19 +95,41 @@ public class AuthorDaoImpl implements AuthorDao {
     @Override
     public void deleteAuthorById(Long id) {
         EntityManager em = getEntityManager();
-        em.getTransaction().begin();
-        Author author = em.find(Author.class, id);
-        em.remove(author);
-        em.flush();
-        em.getTransaction().commit();
+        EntityTransaction transaction = em.getTransaction();
+
+        try {
+            transaction.begin(); // Start the resource-local transaction.
+
+            Author author = em.find(Author.class, id);
+            if (author == null) {
+                transaction.commit(); // Complete the read transaction cleanly.
+                return; // No entity exists for this ID.
+            }
+
+            em.remove(author); // Mark the managed entity for deletion.
+            em.flush(); // Execute the DELETE before the transaction completes.
+            // This can be useful for detecting constraint or database errors before the commit call. It is otherwise
+            // redundant because commit() automatically flushes pending changes.
+            transaction.commit();
+        } catch (RuntimeException exception) {
+            if (transaction.isActive()) { // Roll back only if the transaction is still active.
+                try {
+                    transaction.rollback(); // Undo uncommitted changes.
+                } catch (RuntimeException rollbackException) {
+                    // Preserve the rollback failure without replacing the original operation error.
+                    exception.addSuppressed(rollbackException);
+                }
+            }
+            throw exception;
+        } finally {
+            em.close(); // Release the persistence context and its resources.
+        }
     }
 
     private EntityManager getEntityManager() {
         return emf.createEntityManager();
     }
 }
-
-
 
 
 
