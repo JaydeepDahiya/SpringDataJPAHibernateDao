@@ -80,23 +80,24 @@ public class BookDaoImpl implements BookDao {
         EntityManager em = getEntityManager();
 
         try {
+            // Build a type-safe Criteria query rooted at the Book entity.
             CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
             CriteriaQuery<Book> criteriaQuery = criteriaBuilder.createQuery(Book.class);
-
             Root<Book> root = criteriaQuery.from(Book.class);
 
+            // Define a parameterized condition matching the book title.
             ParameterExpression<String> titleParam = criteriaBuilder.parameter(String.class);
-
             Predicate titlePredicate = criteriaBuilder.equal(root.get("title"), titleParam);
-
             criteriaQuery.select(root).where(titlePredicate);
 
+            // Bind the title value and require exactly one matching book.
             TypedQuery<Book> typedQuery = em.createQuery(criteriaQuery);
             typedQuery.setParameter(titleParam, title);
 
             return typedQuery.getSingleResult();
         } finally {
-            em.close();;
+            // Close the persistence context whether the query succeeds or fails.
+            em.close();
         }
     }
 
