@@ -6,27 +6,22 @@ import guru.springframework.jdbc.dao.BookDao;
 import guru.springframework.jdbc.dao.BookDaoImpl;
 import guru.springframework.jdbc.domain.Author;
 import guru.springframework.jdbc.domain.Book;
+import guru.springframework.jdbc.repositories.BookRepository;
 import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by jt on 8/28/21.
- */
-@ActiveProfiles("local")
 @DataJpaTest
 @Import({AuthorDaoImpl.class, BookDaoImpl.class})
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public class DaoIntegrationTest {
+public abstract class DaoIntegrationTest {
     @Autowired
     AuthorDao authorDao;
 
@@ -47,7 +42,7 @@ public class DaoIntegrationTest {
         book.setIsbn("1234" + RandomString.make());
         book.setTitle("ISBN TEST");
 
-        Book saved = bookDao.saveNewBook(book);
+        bookDao.saveNewBook(book);
 
         Book fetched = bookDao.findByISBN(book.getIsbn());
         assertThat(fetched).isNotNull();
@@ -57,8 +52,7 @@ public class DaoIntegrationTest {
     void testListAuthorByLastNameLike() {
         List<Author> authors = authorDao.listAuthorByLastNameLike("Wall");
 
-        assertThat(authors).isNotNull();
-        assertThat(authors.size()).isGreaterThan(0);
+        assertThat(authors).isNotNull().hasSizeGreaterThan(0);
     }
 
     @Test
@@ -140,9 +134,6 @@ public class DaoIntegrationTest {
 
         Author deleted = authorDao.getById(saved.getId());
         assertThat(deleted).isNull();
-
-        assertThat(authorDao.getById(saved.getId()));
-
     }
 
     @Test
@@ -185,4 +176,22 @@ public class DaoIntegrationTest {
         assertThat(author).isNotNull();
 
     }
+}
+
+class H2Test extends DaoIntegrationTest {
+}
+
+@ActiveProfiles("local")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class MySQLIntegrationTest extends DaoIntegrationTest {
+
+    @Autowired
+    BookRepository bookRepository;
+
+    @Test
+    void testMySQL() {
+        long countBefore = bookRepository.count();
+        assertThat(countBefore).isGreaterThan(0);
+    }
+
 }
