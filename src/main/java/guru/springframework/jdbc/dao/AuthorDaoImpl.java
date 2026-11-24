@@ -2,6 +2,7 @@ package guru.springframework.jdbc.dao;
 
 import guru.springframework.jdbc.domain.Author;
 import jakarta.persistence.*;
+import jakarta.persistence.criteria.*;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -96,25 +97,20 @@ public class AuthorDaoImpl implements AuthorDao {
         EntityManager em = getEntityManager();
 
         try {
+            // Create a Criteria query that returns Author entities.
             CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
             CriteriaQuery<Author> criteriaQuery = criteriaBuilder.createQuery(Author.class);
-
             Root<Author> root = criteriaQuery.from(Author.class);
 
-            ParameterExpression<String> firstNameParam = criteriaBuilder.parameter(String.class);
-            ParameterExpression<String> lastNameParam = criteriaBuilder.parameter(String.class);
+            // Match both supplied names; the Criteria API handles values separately from query structure.
+            criteriaQuery.select(root).where(
+                    criteriaBuilder.equal(root.get("firstName"), firstName),
+                    criteriaBuilder.equal(root.get("lastName"), lastName));
 
-            Predicate firstNamePred = criteriaBuilder.equal(root.get("firstName"), firstNameParam);
-            Predicate lastNamePred = criteriaBuilder.equal(root.get("lastName"), lastNameParam);
-
-            criteriaQuery.select(root).where(criteriaBuilder.and(firstNamePred, lastNamePred));
-
-            TypedQuery<Author> typedQuery = em.createQuery(criteriaQuery);
-            typedQuery.setParameter(firstNameParam, firstName);
-            typedQuery.setParameter(lastNameParam, lastName);
-
-            return typedQuery.getSingleResult();
+            // Expects exactly one match; throws if none or multiple authors match.
+            return em.createQuery(criteriaQuery).getSingleResult();
         } finally {
+            // Release the persistence context whether the query succeeds or fails.
             em.close();
         }
     }
