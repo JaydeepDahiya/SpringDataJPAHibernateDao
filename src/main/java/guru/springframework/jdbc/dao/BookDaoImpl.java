@@ -107,13 +107,16 @@ public class BookDaoImpl implements BookDao {
         EntityManager em = getEntityManager();
 
         try {
-            Query query = em.createNativeQuery("SELECT * FROM book WHERE title = :title", Book.class);
-
-            query.setParameter("title", title);
-
+            // Execute SQL against the book table and map the result row to a Book entity.
+            Query query = em.createNativeQuery("SELECT * FROM book WHERE title = ?", Book.class);
+            // Positional parameters are used because named parameters in native SQL are not guaranteed by JPA.
+            query.setParameter(1, title);
+            // Expects exactly one match; throws if no book or multiple books match.
+            // The native-query API is untyped, so cast the mapped result to Book.
             return (Book) query.getSingleResult();
         } finally {
-            em.close();;
+            // Close the persistence context whether the query succeeds or fails.
+            em.close();
         }
     }
 
