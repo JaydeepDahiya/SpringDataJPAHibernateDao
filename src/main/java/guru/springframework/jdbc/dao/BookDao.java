@@ -8,6 +8,8 @@ import java.util.List;
  * Created by jt on 8/29/21.
  */
 public interface BookDao {
+    Book findBookByTitleNamedQuery(String title);
+
     Book findByISBN(String isbn);
 
     Book getById(Long id);

@@ -29,6 +29,20 @@ public abstract class DaoIntegrationTest {
     BookDao bookDao;
 
     @Test
+    void testFindBookByTitleNamedQuery() {
+        Book book = new Book();
+        book.setIsbn("1235" + RandomString.make());
+        book.setTitle("TITLETEST2");
+
+        Book saved = bookDao.saveNewBook(book);
+
+        Book fetched = bookDao.findBookByTitleNamedQuery(book.getTitle());
+        assertThat(fetched).isNotNull();
+
+        bookDao.deleteBookById(saved.getId());
+    }
+
+    @Test
     void testGetAuthorByNameNamedQuery() {
         Author author = authorDao.findAuthorByNameNamedQuery("Craig", "Walls");
 
@@ -112,6 +126,8 @@ public abstract class DaoIntegrationTest {
         Book saved = bookDao.saveNewBook(book);
 
         assertThat(saved).isNotNull();
+
+        bookDao.deleteBookById(saved.getId());
     }
 
     @Test
@@ -166,6 +182,8 @@ public abstract class DaoIntegrationTest {
 
         assertThat(saved).isNotNull();
         assertThat(saved.getId()).isNotNull();
+
+        authorDao.deleteAuthorById(saved.getId());
     }
 
     @Test
@@ -199,11 +217,9 @@ public abstract class DaoIntegrationTest {
 
     @Test
     void testGetAuthor() {
-
         Author author = authorDao.getById(1L);
 
         assertThat(author).isNotNull();
-
     }
 }
 

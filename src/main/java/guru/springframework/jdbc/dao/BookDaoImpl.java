@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.TypedQuery;
 import org.springframework.stereotype.Component;
+
 import java.util.List;
 
 @Component
@@ -20,7 +21,7 @@ public class BookDaoImpl implements BookDao {
     public Book findBookByTitleNamedQuery(String title) {
         EntityManager em = getEntityManager();
         try {
-            TypedQuery<Book> query = em.createNamedQuery("SELECT b FROM Book b WHERE b.title = :title", Book.class);
+            TypedQuery<Book> query = em.createNamedQuery("find_by_title", Book.class);
             query.setParameter("title", title);
             return query.getSingleResult();
         } finally {
@@ -170,7 +171,7 @@ public class BookDaoImpl implements BookDao {
         }
     }
 
-    private EntityManager getEntityManager(){
+    private EntityManager getEntityManager() {
         return emf.createEntityManager();
     }
 }
