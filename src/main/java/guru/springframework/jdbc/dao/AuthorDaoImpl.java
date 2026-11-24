@@ -20,10 +20,14 @@ public class AuthorDaoImpl implements AuthorDao {
         EntityManager em = getEntityManager();
 
         try {
+            // JPQL queries the Author entity; the named parameter keeps the search value separate from the query.
             Query query = em.createQuery("SELECT a FROM Author a WHERE a.lastName LIKE :last_name");
+            // Append % to match last names that begin with the supplied value.
             query.setParameter("last_name", lastName + "%");
+            // Execute the query and return all matching authors.
             return query.getResultList();
         } finally {
+            // Release the persistence context whether the query succeeds or fails.
             em.close();
         }
     }
