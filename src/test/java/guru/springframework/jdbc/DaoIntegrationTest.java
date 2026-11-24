@@ -6,20 +6,18 @@ import guru.springframework.jdbc.dao.BookDao;
 import guru.springframework.jdbc.dao.BookDaoImpl;
 import guru.springframework.jdbc.domain.Author;
 import guru.springframework.jdbc.domain.Book;
-import net.bytebuddy.utility.RandomString;
 import guru.springframework.jdbc.repositories.BookRepository;
+import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Import({AuthorDaoImpl.class, BookDaoImpl.class})
@@ -36,7 +34,7 @@ public abstract class DaoIntegrationTest {
         book.setIsbn("1234" + RandomString.make());
         book.setTitle("ISBN TEST");
 
-        Book saved = bookDao.saveNewBook(book);
+        bookDao.saveNewBook(book);
 
         Book fetched = bookDao.findByISBN(book.getIsbn());
         assertThat(fetched).isNotNull();
@@ -46,8 +44,7 @@ public abstract class DaoIntegrationTest {
     void testListAuthorByLastNameLike() {
         List<Author> authors = authorDao.listAuthorByLastNameLike("Wall");
 
-        assertThat(authors).isNotNull();
-        assertThat(authors.size()).isGreaterThan(0);
+        assertThat(authors).isNotNull().hasSizeGreaterThan(0);
     }
 
     @Test
@@ -129,9 +126,6 @@ public abstract class DaoIntegrationTest {
 
         Author deleted = authorDao.getById(saved.getId());
         assertThat(deleted).isNull();
-
-        assertThat(authorDao.getById(saved.getId()));
-
     }
 
     @Test

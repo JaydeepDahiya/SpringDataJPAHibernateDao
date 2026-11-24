@@ -20,12 +20,14 @@ public class BookDaoImpl implements BookDao {
         EntityManager em = getEntityManager();
 
         try {
+            // TypedQuery ensures the query results are Book entities.
             TypedQuery<Book> query = em.createQuery("SELECT b FROM Book b WHERE b.isbn = :isbn", Book.class);
+            // Bind the ISBN separately from the JPQL query text.
             query.setParameter("isbn", isbn);
-
-            Book book = query.getSingleResult();
-            return book;
+            // Expects exactly one match; throws if no book or multiple books match.
+            return query.getSingleResult();
         } finally {
+            // Close the persistence context whether the query succeeds or fails.
             em.close();
         }
     }
