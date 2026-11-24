@@ -19,12 +19,15 @@ public class AuthorDaoImpl implements AuthorDao {
     public Author findAuthorByNameNamedQuery(String firstName, String lastName) {
         EntityManager em = getEntityManager();
         try {
-            TypedQuery<Author> query = em.createNamedQuery("SELECT a FROM Author a " +
-                    "WHERE a.firstName = :first_name AND a.lastName = :last_name", Author.class);
+            // Look up the named query declared on Author; the query returns a type-safe Author result.
+            TypedQuery<Author> query = em.createNamedQuery("find_by_name", Author.class);
+            // Supply values for the named parameters defined in the JPQL.
             query.setParameter("first_name", firstName);
             query.setParameter("last_name", lastName);
+            // Expects exactly one match; throws if none or multiple authors match.
             return query.getSingleResult();
         } finally {
+            // Release the persistence context whether the query succeeds or fails.
             em.close();
         }
     }
@@ -70,26 +73,20 @@ public class AuthorDaoImpl implements AuthorDao {
         }
     }
 
-    /*
-    TypedQuery<Author> provides a type-safe JPA query, so query.getSingleResult() returns an Author directly instead of
-    an Object that would require a cast.
-
-    The named parameters :first_name and :last_name are bound with setParameter(), helping prevent syntax/projection
-    mistakes and keeping the input values separate from JPQL.
-
-    Note: getSingleResult() throws NoResultException when no author matches and NonUniqueResultException if multiple
-    authors match. If zero or many results are valid, use getResultList() or getResultStream() instead.
-    */
     @Override
     public Author findAuthorByName(String firstName, String lastName) {
         EntityManager em = getEntityManager();
         try {
+            // Create a type-safe JPQL query matching both the author's first and last names.
             TypedQuery<Author> query = em.createQuery("SELECT a FROM Author a " +
                     "WHERE a.firstName = :first_name AND a.lastName = :last_name", Author.class);
+            // Bind the search values separately from the query text.
             query.setParameter("first_name", firstName);
             query.setParameter("last_name", lastName);
+            // Expects exactly one match; throws if none or more than one is found.
             return query.getSingleResult();
         } finally {
+            // Release the persistence context whether the query succeeds or fails.
             em.close();
         }
     }
