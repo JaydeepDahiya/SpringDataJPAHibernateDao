@@ -133,11 +133,12 @@ public class AuthorDaoImpl implements AuthorDao {
             Query query = em.createNativeQuery(
                     "SELECT * FROM author a WHERE a.first_name = ? AND a.last_name = ?",
                     Author.class);
-            // Native-query positional parameters are numbered from 1.
+            // Use positional parameters because named parameters in native SQL are not guaranteed by the JPA specification.
             query.setParameter(1, firstName);
             query.setParameter(2, lastName);
 
             // Expects exactly one match; throws if no author or multiple authors match.
+            // Native-query results use Query's untyped API, so cast the mapped result to Author.
             return (Author) query.getSingleResult();
         } finally {
             // Release the persistence context whether the query succeeds or fails.
