@@ -18,24 +18,30 @@ public class BookDaoImpl implements BookDao {
     @Override
     public Book getById(Long id) {
         EntityManager em = getEntityManager();
-        Book book = getEntityManager().find(Book.class, id);
-        em.close();
-        return book;
+        try {
+            return em.find(Book.class, id);
+        } finally {
+            em.close();
+        }
     }
 
     /*
     TypedQuery<Book> provides a type-safe JPA query, so query.getSingleResult() returns an Book directly instead of
     an Object that would require a cast.
+
+    Note: getSingleResult() throws NoResultException when no book matches and NonUniqueResultException if multiple
+    books match. If zero or many results are valid, use getResultList() or getResultStream() instead.
     */
     @Override
     public Book findBookByTitle(String title) {
         EntityManager em = getEntityManager();
-        TypedQuery<Book> query = em.createQuery("SELECT b FROM Book b WHERE b.title= :title", Book.class);
-        query.setParameter("title", title);
-
-        Book book = query.getSingleResult(); // throws NoResultException: if No result found for query
-        em.close();
-        return book;
+        try {
+            TypedQuery<Book> query = em.createQuery("SELECT b FROM Book b WHERE b.title = :title", Book.class);
+            query.setParameter("title", title);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
     }
 
     @Override

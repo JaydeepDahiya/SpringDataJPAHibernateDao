@@ -7,9 +7,6 @@ import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.TypedQuery;
 import org.springframework.stereotype.Component;
 
-/**
- * Created by jt on 8/28/21.
- */
 @Component
 public class AuthorDaoImpl implements AuthorDao {
 
@@ -22,9 +19,11 @@ public class AuthorDaoImpl implements AuthorDao {
     @Override
     public Author getById(Long id) {
         EntityManager em = getEntityManager();
-        Author author = getEntityManager().find(Author.class, id);
-        em.close();
-        return author;
+        try {
+            return em.find(Author.class, id);
+        } finally {
+            em.close();
+        }
     }
 
     /*
@@ -40,38 +39,40 @@ public class AuthorDaoImpl implements AuthorDao {
     @Override
     public Author findAuthorByName(String firstName, String lastName) {
         EntityManager em = getEntityManager();
-        TypedQuery<Author> query = em.createQuery("SELECT a FROM Author a " +
-                "WHERE a.firstName = :first_name and a.lastName = :last_name", Author.class);
-        query.setParameter("first_name", firstName);
-        query.setParameter("last_name", lastName);
-
-        Author author = query.getSingleResult();
-        em.close();
-        return author;
+        try {
+            TypedQuery<Author> query = em.createQuery("SELECT a FROM Author a " +
+                    "WHERE a.firstName = :first_name AND a.lastName = :last_name", Author.class);
+            query.setParameter("first_name", firstName);
+            query.setParameter("last_name", lastName);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
     }
 
-    /*
-    flush() synchronizes the persistence context with the database: it makes JPA send pending SQL now instead of waiting
-    until commit. Here, it causes INSERT to run before commit(), so database errors (such as a constraint violation) can
-    surface at that point. It does not commit; transaction can still be rolled back afterward. If you remove it, commit()
-    normally triggers flush automatically, so an explicit flush is only needed when you want SQL executed before commit.
-
-    A transaction groups the insert into one atomic unit: the change is committed if the operation succeeds, or can be
-    rolled back if it fails. JPA requires a transaction for persist() when using a resource-local EntityManager like
-    this one. Be sure to roll back on exceptions and close the EntityManager when finished.
-     */
     @Override
     public Author saveNewAuthor(Author author) {
         EntityManager em = getEntityManager();
-        em.getTransaction().begin(); // Start a transaction for the database changes.
-        em.persist(author);          // Mark the author as new so JPA will insert it.
-        //em.flush();                // Send pending SQL to database before committing. NOTE: flush require transaction
-        em.getTransaction().commit();// Commit the insert transaction.
-        // In this method, commit() automatically flushes pending changes, so the explicit em.flush() is redundant. Keep
-        // it only if you specifically want the SQL executed before the commit—for example, to surface database errors
-        // earlier. The ID should generally be available after commit(), depending on entity’s ID-generation strategy.
-        em.close();
-        return author;
+        EntityTransaction transaction = em.getTransaction();
+
+        try {
+            transaction.begin(); // Start the transaction required for this database operation.
+            em.persist(author);  // Schedule the new author for insertion.
+            transaction.commit(); // Commit; JPA flushes pending changes before completing the commit.
+            return author;
+        } catch (RuntimeException exception) {
+            if (transaction.isActive()) {
+                try {
+                    transaction.rollback(); // Undo uncommitted changes if the operation failed.
+                } catch (RuntimeException rollbackException) {
+                    // Preserve the original failure while retaining any rollback failure for diagnosis.
+                    exception.addSuppressed(rollbackException);
+                }
+            }
+            throw exception;
+        } finally {
+            em.close(); // Release the persistence context and its database resources.
+        }
     }
 
     @Override
@@ -81,8 +82,8 @@ public class AuthorDaoImpl implements AuthorDao {
 
         try {
             transaction.begin(); // Start the transaction required for this database operation.
-            Author merged = em.merge(author); // Copy the detached author's state into a managed entity.
-            transaction.commit(); // Commit; JPA flushes pending updates before completing the commit.
+            Author merged = em.merge(author);  // Schedule the new author for insertion.
+            transaction.commit(); // Commit; JPA flushes pending changes before completing the commit.
             return merged;
         } catch (RuntimeException exception) {
             if (transaction.isActive()) {
@@ -137,19 +138,3 @@ public class AuthorDaoImpl implements AuthorDao {
         return emf.createEntityManager();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
