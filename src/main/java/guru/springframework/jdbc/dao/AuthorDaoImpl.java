@@ -102,13 +102,22 @@ public class AuthorDaoImpl implements AuthorDao {
             CriteriaQuery<Author> criteriaQuery = criteriaBuilder.createQuery(Author.class);
             Root<Author> root = criteriaQuery.from(Author.class);
 
-            // Match both supplied names; the Criteria API handles values separately from query structure.
-            criteriaQuery.select(root).where(
-                    criteriaBuilder.equal(root.get("firstName"), firstName),
-                    criteriaBuilder.equal(root.get("lastName"), lastName));
+            // Create parameters for the first-name and last-name search values.
+            ParameterExpression<String> firstNameParam = criteriaBuilder.parameter(String.class);
+            ParameterExpression<String> lastNameParam = criteriaBuilder.parameter(String.class);
 
-            // Expects exactly one match; throws if none or multiple authors match.
-            return em.createQuery(criteriaQuery).getSingleResult();
+            // Require both names to match the corresponding parameters.
+            Predicate firstNamePred = criteriaBuilder.equal(root.get("firstName"), firstNameParam);
+            Predicate lastNamePred = criteriaBuilder.equal(root.get("lastName"), lastNameParam);
+            criteriaQuery.select(root).where(criteriaBuilder.and(firstNamePred, lastNamePred));
+
+            // Bind the supplied values and execute the query.
+            TypedQuery<Author> typedQuery = em.createQuery(criteriaQuery);
+            typedQuery.setParameter(firstNameParam, firstName);
+            typedQuery.setParameter(lastNameParam, lastName);
+
+            // Expects exactly one match; throws if no author or multiple authors match.
+            return typedQuery.getSingleResult();
         } finally {
             // Release the persistence context whether the query succeeds or fails.
             em.close();
