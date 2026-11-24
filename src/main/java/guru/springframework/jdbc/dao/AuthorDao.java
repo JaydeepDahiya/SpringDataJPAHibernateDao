@@ -8,6 +8,9 @@ import java.util.List;
  * Created by jt on 8/22/21.
  */
 public interface AuthorDao {
+
+    Author findAuthorByNameNamedQuery(String firstName, String lastName);
+
     List<Author> findAll();
 
     List<Author> listAuthorByLastNameLike(String lastName);
