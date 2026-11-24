@@ -19,11 +19,12 @@ public class AuthorDaoImpl implements AuthorDao {
     public List<Author> findAll() {
         EntityManager em = getEntityManager();
 
-        try{
-            TypedQuery<Author> typedQuery = em.createNamedQuery("author_find_all", Author.class);
-
-            return typedQuery.getResultList();
+        try {
+            // Use the named query declared for Author; getResultList returns an empty list when there are no matches.
+            TypedQuery<Author> query = em.createNamedQuery("author_find_all", Author.class);
+            return query.getResultList();
         } finally {
+            // Release the persistence context whether the query succeeds or fails.
             em.close();
         }
     }
